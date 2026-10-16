@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Skunyu Dealz</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--tx:#14171c;--mut:#667085;--bd:#e1e4ea;--ac:#e11d48;--ok:#16a34a;--bad:#dc2626;--cv:#0f172a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b0d12;--card:#161a22;--tx:#eef0f4;--mut:#98a2b3;--bd:#262b36;--cv:#05070b}}
+:root[data-theme="dark"]{--bg:#0b0d12;--card:#161a22;--tx:#eef0f4;--mut:#98a2b3;--bd:#262b36;--cv:#05070b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:12px}
+.w{max-width:560px;margin:0 auto;display:grid;gap:12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px}
+h1{font-size:18px;margin:0}
+.top{display:flex;justify-content:space-between;align-items:center}
+.bal{text-align:right}.bal small{color:var(--mut);display:block;font-size:12px}.bal b{font-size:22px}
+canvas{width:100%;height:240px;background:var(--cv);border-radius:12px;display:block}
+.mult{position:relative;margin-top:-170px;height:170px;display:flex;align-items:center;justify-content:center;font-size:48px;font-weight:800;color:#fff;pointer-events:none}
+.mult.crash{color:var(--bad)}
+.mult.wait{font-size:26px;color:#94a3b8}
+.row{display:flex;gap:8px;margin-top:10px}
+input{flex:1;min-width:0;padding:11px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font-size:16px}
+label{font-size:12px;color:var(--mut);display:block;margin-top:10px}
+button{padding:12px 14px;border:0;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;background:var(--ac);color:#fff}
+button.g{background:var(--ok)}button.s{background:var(--bd);color:var(--tx)}button:disabled{opacity:.45;cursor:not-allowed}
+.big{width:100%;margin-top:10px;padding:14px}
+.msg{margin-top:8px;font-size:14px;min-height:20px}
+.hist{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.hist span{padding:3px 8px;border-radius:99px;font-size:12px;font-weight:700;background:var(--bd)}
+.hist .hi{color:var(--ok)}.hist .lo{color:var(--bad)}
+ul{list-style:none;padding:0;margin:8px 0 0;max-height:170px;overflow-y:auto;font-size:13px}
+li{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd)}
+.note{font-size:11px;color:var(--mut);text-align:center}
+.w2{color:var(--ok)}.l2{color:var(--bad)}
+#auth{position:fixed;inset:0;z-index:100;background:var(--bg);overflow:auto;padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px))}
+.ac{max-width:420px;margin:6vh auto 0;display:grid;gap:12px}.lk{text-align:center;margin-top:12px;font-size:14px}a{color:var(--ac)}
+.rg{font-size:12px;color:var(--mut);text-align:center;line-height:1.6}.rg b{color:var(--tx)}
+#pl li{display:grid;grid-template-columns:1.3fr .8fr 1.4fr;gap:6px}#pl li span:last-child{text-align:right;font-weight:700}
+</style>
+</head>
+<body>
+<div id="auth"><div class="ac">
+ <h1 style="text-align:center">✈️ Skunyu Dealz</h1>
+ <div id="v-login" class="card">
+  <b>Login</b>
+  <label>Mobile number</label><input id="lp" type="tel" placeholder="e.g. 0771234567" autocomplete="username">
+  <label>Password</label><input id="lw" type="password" autocomplete="current-password">
+  <button class="big" id="lg">Login</button>
+  <div class="msg" id="lm"></div>
+  <div class="lk"><a href="#" id="to-reset">Reset Password</a></div>
+  <div class="lk">Don't have an account? <a href="#" id="to-reg"><b>REGISTER NOW</b></a></div>
+ </div>
+ <div id="v-reg" class="card" style="display:none">
+  <b>REGISTER NOW</b>
+  <label>Full name</label><input id="rn" type="text" autocomplete="name">
+  <label>Mobile number</label><input id="rp" type="tel" placeholder="e.g. 0771234567">
+  <label>Password (min 6 characters)</label><input id="rw" type="password" autocomplete="new-password">
+  <label>Confirm password</label><input id="rc" type="password" autocomplete="new-password">
+  <button class="big" id="rg">REGISTER</button>
+  <div class="msg" id="rm"></div>
+  <div class="lk">Already registered? <a href="#" class="bk">Back to Login</a></div>
+ </div>
+ <div id="v-reset" class="card" style="display:none">
+  <b>Reset Password</b>
+  <label>Registered mobile number</label><input id="pp" type="tel">
+  <label>Registered full name (for verification)</label><input id="pn" type="text">
+  <label>New password (min 6 characters)</label><input id="pw" type="password" autocomplete="new-password">
+  <label>Confirm new password</label><input id="pc" type="password" autocomplete="new-password">
+  <button class="big" id="pr">Reset Password</button>
+  <div class="msg" id="pm"></div>
+  <div class="lk"><a href="#" class="bk">Back to Login</a></div>
+ </div>
+ <div class="card rg"><b>Queries &amp; Contact Support</b><br>Email: <a href="mailto:skunyudealz@gmail.com">skunyudealz@gmail.com</a><br>Phone: <a href="tel:+263784303865">+263 78 430 3865</a>, <a href="tel:+263785802606">+263 78 580 2606</a></div>
+</div></div>
+<div class="w" id="admin" style="display:none">
+ <div class="card top"><h1>Admin Panel</h1><span><a href="#" id="apw">Change password</a> · <a href="#" id="aout">Logout</a></span></div>
+ <div class="card"><div class="top"><b>All players</b><small id="acnt" style="color:var(--mut)"></small></div><ul id="alist" style="max-height:240px"></ul><div style="margin-top:6px;font-size:12px;color:var(--mut)">Tap a player to view details and transactions.</div></div>
+ <div class="card" id="adet" style="display:none">
+  <div id="adn" style="font-size:14px;line-height:1.6"></div>
+  <b style="display:block;margin-top:10px">Transaction history</b><ul id="adl" style="max-height:200px"></ul>
+  <label>Adjust balance (use - to deduct) and reason</label>
+  <div class="row"><input id="aamt" type="number" step="0.01" placeholder="Amount"><input id="awhy" type="text" placeholder="Reason"></div>
+  <button class="big" id="aadj">Apply Adjustment</button>
+  <div class="row"><button class="s" id="arst" style="flex:1">Reset Password</button><button class="s" id="ablk" style="flex:1">Block</button></div>
+ </div>
+ <div class="card"><b>Player issues</b><ul id="atk"></ul></div>
+</div>
+<div class="w" id="app" style="display:none">
+ <div class="card top"><h1>✈️ Skunyu Dealz</h1><div class="bal"><small id="who"></small><small>Balance</small><b id="bal">$0.00</b><small id="dl" style="min-height:15px;font-weight:700"></small></div></div>
+
+ <div class="card">
+  <canvas id="cv" width="520" height="240"></canvas>
+  <div class="mult" id="mult">1.00x</div>
+  <div class="hist" id="hist"></div>
+ </div>
+ <div class="card"><div class="top"><b>Live Players</b><small id="pcnt" style="color:var(--mut)"></small></div><ul id="pl" style="max-height:210px"></ul></div>
+
+ <div class="card">
+  <div class="row">
+   <div style="flex:1"><label style="margin:0">Bet amount ($)</label><input id="bet" type="number" min="0.1" step="0.1" value="1"></div>
+   <div style="flex:1"><label style="margin:0">Auto cash-out (x, optional)</label><input id="auto" type="number" min="1.1" step="0.1" placeholder="e.g. 2.0"></div>
+  </div>
+  <button class="big" id="go">Place Bet for Next Round</button>
+  <button class="big g" id="cash" style="display:none">Cash Out</button>
+  <div class="msg" id="msg"></div>
+ </div>
+
+ <div class="card">
+  <b>Deposit (virtual)</b>
+  <div class="msg" style="color:var(--tx)">Send the money to: <b>0786239730</b></div>
+  <label>Amount ($)</label><input id="dep" type="number" min="1" max="100" step="1" placeholder="Amount">
+  <label>Number to send the money from (any number)</label><input id="dnum" type="tel" placeholder="e.g. 0771234567">
+  <button class="big" id="depb">Send Money</button>
+  <div id="apv" style="display:none">
+   <label>Approval code</label>
+   <input id="code" type="text" placeholder="Enter approval code" autocomplete="off">
+   <button class="big g" id="codeb">Confirm Deposit</button>
+  </div>
+  <div class="msg" id="dmsg"></div>
+ </div>
+
+ <div class="card">
+  <b>Withdraw</b>
+  <label>Amount ($)</label><input id="wamt" type="number" min="1" max="500" step="0.01" placeholder="Amount">
+  <label>Phone number to send to</label><input id="wph" type="tel" placeholder="e.g. 0771234567 or +263771234567">
+  <button class="big s" id="wb">Withdraw</button>
+  <div class="msg" id="wmsg"></div>
+ </div>
+
+ <div class="card"><b>Round records</b><ul id="rec"></ul></div>
+
+ <div class="card"><b>Transactions</b><ul id="log"></ul></div>
+ <div class="card"><b>Report an Issue</b>
+  <div class="row"><input id="tx" type="text" maxlength="300" placeholder="Describe your issue"><button id="tb">Send</button></div>
+  <ul id="tl"></ul></div>
+ <div class="card rg"><b>Queries &amp; Contact Support</b><br>Email: <a href="mailto:skunyudealz@gmail.com">skunyudealz@gmail.com</a><br>Phone: <a href="tel:+263784303865">+263 78 430 3865</a>, <a href="tel:+263785802606">+263 78 580 2606</a></div>
+ <div class="card rg"><b>Play Responsibly.</b> No persons under the age of 18 years are permitted to gamble. Winners know when to stop.<br><b>Warning:</b> Gambling involves risk.</div>
+ <div class="note">Copyright &copy; 2026 Skunyu Dealz</div>
+ 
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let balance=0,state='idle',m=1,crashAt=1,t0=0,stake=0,raf,history=[],log=[],queued=0,cashedAt=0,round=0,rec=[],cd=0,tmr;
+let user=null,started=false,uname='';
+function loadUser(){balance=0;history=[];log=[];rec=[];round=0;try{const s=JSON.parse(localStorage.getItem('avi_'+user)||'null');if(s){balance=s.b||0;history=s.h||[];log=s.l||[];rec=s.r||[];round=s.n||0}}catch(e){}}
+function save(){try{if(user)localStorage.setItem('avi_'+user,JSON.stringify({b:balance,h:history.slice(0,15),l:log.slice(0,40),r:rec.slice(0,30),n:round}))}catch(e){}}
+const money=n=>'$'+n.toFixed(2);
+function render(){
+ $('bal').textContent=money(balance);
+ $('hist').innerHTML=history.slice(0,12).map(x=>`<span class="${x>=2?'hi':'lo'}">${x.toFixed(2)}x</span>`).join('');
+ $('rec').innerHTML=rec.slice(0,30).map(x=>`<li><span>Round #${x.n} — ${x.x.toFixed(2)}x</span><span class="${x.r==='Lost'?'l2':x.r==='No bet'?'':'w2'}">${x.r}</span></li>`).join('')||'<li><span>No rounds yet</span></li>';
+ $('log').innerHTML=log.slice(0,40).map(x=>`<li><span>${x.t}</span><span class="${x.a>=0?'w2':'l2'}">${x.a>=0?'+':''}${x.a.toFixed(2)} → ${money(x.b)}</span></li>`).join('')||'<li><span>No transactions yet</span></li>';
+}
+function addLog(t,a){log.unshift({t,a,b:balance});save();render();flash(a)}
+function flash(a){
+ const d=$('dl'),b=$('bal'),c=a>=0?'var(--ok)':'var(--bad)';
+ d.textContent=(a>=0?'+':'-')+money(Math.abs(a));d.style.color=c;b.style.color=c;
+ setTimeout(()=>{d.textContent='';b.style.color=''},2500);
+}
+function msg(el,t,c){el.textContent=t;el.style.color=c||'var(--tx)'}
+// crash point: 20% instant crash (1.00x), 30% crash at 1.01x-1.30x, the rest use a 15% house-edge formula
+function genCrash(){
+ const r=Math.random();
+ if(r<0.20)return 1;
+ if(r<0.50)return 1+Math.floor(1+Math.random()*30)/100;
+ return Math.max(1,Math.floor(100*(0.85/(1-Math.random())))/100);
+}
+const cv=$('cv'),ctx=cv.getContext('2d');
+function draw(){
+ const W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
+ const t=(performance.now()-t0)/1000,tx=Math.max(8,t),my=Math.max(2,m);
+ ctx.strokeStyle='#334155';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(30,10);ctx.lineTo(30,H-25);ctx.lineTo(W-10,H-25);ctx.stroke();
+ if(state==='idle'||state==='wait'){ctx.font='36px serif';ctx.fillText('✈️',34,H-32);return}
+ const X=s=>30+(s/tx)*(W-50),Y=v=>H-25-((v-1)/(my-1))*(H-50);
+ ctx.beginPath();ctx.moveTo(X(0),Y(1));
+ for(let s=0;s<=t;s+=0.05)ctx.lineTo(X(s),Y(Math.exp(0.12*s)));
+ ctx.lineTo(X(t),Y(m));ctx.strokeStyle='#e11d48';ctx.lineWidth=4;ctx.stroke();
+ ctx.lineTo(X(t),H-25);ctx.lineTo(X(0),H-25);ctx.fillStyle='rgba(225,29,72,.18)';ctx.fill();
+ if(state==='flying'){ctx.font='30px serif';ctx.fillText('✈️',X(t)-14,Y(m)-6)}
+ else{ctx.font='30px serif';ctx.fillText('💥',X(t)-14,Y(m)-6)}
+}
+function tick(){
+ m=Math.exp(0.12*(performance.now()-t0)/1000);
+ const au=parseFloat($('auto').value);
+ if(m>=crashAt){m=crashAt;end();return}
+ if(au>=1.1&&m>=au){cashOut(au);}
+ stepBots();
+ $('mult').textContent=m.toFixed(2)+'x';draw();
+ if(state==='flying')raf=requestAnimationFrame(tick);
+}
+function cashOut(at){
+ if(state!=='flying'||!stake)return;
+ const mm=at||m,win=stake*mm;balance+=win;cashedAt=mm;
+ addLog(`Won @ ${mm.toFixed(2)}x (bet ${money(stake)})`,win-stake);
+ msg($('msg'),`Cashed out at ${mm.toFixed(2)}x. You won ${money(win-stake)}. Balance: ${money(balance)}`,'var(--ok)');
+ stake=0;$('cash').style.display='none';
+}
+function end(){
+ state='crashed';cancelAnimationFrame(raf);
+ history.unshift(crashAt);round++;const lost=stake;bots.forEach(b=>{if(!b.st)b.st=2});renderBots();
+ $('mult').textContent='Crashed @ '+crashAt.toFixed(2)+'x';$('mult').classList.add('crash');draw();
+ if(stake){addLog(`Lost (crashed @ ${crashAt.toFixed(2)}x)`,-stake);msg($('msg'),`Crashed! You lost ${money(stake)}. Balance: ${money(balance)}`,'var(--bad)');stake=0}
+ if(!lost&&!cashedAt)msg($('msg'),'Round crashed at '+crashAt.toFixed(2)+'x (no bet placed).');
+ rec.unshift({n:round,x:crashAt,r:lost?'Lost':cashedAt?'Won @ '+cashedAt.toFixed(2)+'x':'No bet'});
+ $('cash').style.display='none';save();render();setTimeout(waitPhase,3000);
+}
+function waitPhase(){
+ state='wait';cancelAnimationFrame(raf);cd=5;mkBots();
+ $('cash').style.display='none';$('mult').classList.remove('crash');$('mult').classList.add('wait');draw();
+ const upd=()=>{$('mult').textContent='Next round in '+cd+'s'};upd();
+ clearInterval(tmr);tmr=setInterval(()=>{cd--;if(cd<=0){clearInterval(tmr);launch()}else upd()},1000);
+}
+function launch(){
+ stake=queued;queued=0;cashedAt=0;crashAt=genCrash();m=1;state='flying';t0=performance.now();
+ $('mult').classList.remove('wait','crash');$('cash').style.display=stake?'block':'none';
+ msg($('msg'),stake?'Plane is flying… cash out before it crashes!':'Round in progress (no bet placed).');
+ refreshGo();raf=requestAnimationFrame(tick);
+}
+function refreshGo(){$('go').textContent=queued?`Cancel Bet (${money(queued)})`:'Place Bet for Next Round'}
+$('go').onclick=()=>{
+ if(queued){balance+=queued;queued=0;refreshGo();render();return msg($('msg'),'Bet cancelled and refunded.')}
+ const b=parseFloat($('bet').value);
+ if(!(b>=0.1))return msg($('msg'),'Enter a bet of at least $0.10.','var(--bad)');
+ if(b>balance)return msg($('msg'),'Insufficient balance. Please deposit first.','var(--bad)');
+ balance-=b;queued=b;refreshGo();render();
+ msg($('msg'),`Bet of ${money(b)} placed for the next round.`);
+};
+$('cash').onclick=()=>cashOut();
+let pend=0,pnum='';
+$('depb').onclick=()=>{
+ const a=parseFloat($('dep').value),n=$('dnum').value.replace(/\s/g,'');
+ if(!(a>=1&&a<=100))return msg($('dmsg'),'Deposit must be between $1 and $100.','var(--bad)');
+ if(!n)return msg($('dmsg'),'Enter a number to send the money from.','var(--bad)');
+ pend=a;pnum=n;$('apv').style.display='block';$('code').focus();
+ msg($('dmsg'),`Sending ${money(a)} from ${n}. Enter the approval code to complete.`);
+};
+$('codeb').onclick=()=>{
+ const c=$('code').value.trim();
+ if(!/^[A-Za-z]{2}\d{6}\.\d{4}\.[A-Za-z]\d{7}$/.test(c))return msg($('dmsg'),'Enter the approval code correctly, try again.','var(--bad)');
+ balance+=pend;addLog(`Deposit from ${pnum} (code ${c.toUpperCase()})`,pend);
+ msg($('dmsg'),`Deposit of ${money(pend)} approved. Balance: ${money(balance)}`,'var(--ok)');
+ pend=0;$('dep').value='';$('dnum').value='';$('code').value='';$('apv').style.display='none';
+};
+$('wb').onclick=()=>{
+ const a=parseFloat($('wamt').value),p=$('wph').value.replace(/\s/g,'');
+ if(state==='flying'&&stake)return msg($('wmsg'),'Cash out or wait for the round to finish first.','var(--bad)');
+ if(!(a>=1&&a<=500))return msg($('wmsg'),'Withdrawal must be between $1 and $500.','var(--bad)');
+ if(a>balance)return msg($('wmsg'),`Insufficient balance (${money(balance)}).`,'var(--bad)');
+ if(!/^(\+263|0)7[0-9]{8}$/.test(p))return msg($('wmsg'),'Enter a valid phone number, e.g. 0771234567 or +263771234567.','var(--bad)');
+ if(!confirm(`Send ${money(a)} to ${p}?`))return;
+ balance-=a;addLog(`Withdrawal to ${p}`,-a);
+ msg($('wmsg'),`${money(a)} sent to ${p} (simulated). Remaining balance: ${money(balance)}`,'var(--ok)');
+ $('wamt').value='';$('wph').value='';
+};
+// ---------- Simulated players ----------
+const FN=['Tendai','Tatenda','Farai','Rudo','Chipo','Tafadzwa','Kudzai','Nyasha','Blessing','Tinashe','Rumbi','Takudzwa','Simba','Ruvimbo','Panashe','Munashe','Tapiwa','Vimbai','Anesu','Kuda','Shamiso','Tanaka','Memory','Prince','Lucky','Gift','Brian','Joy'];
+const LN=['M.','C.','N.','S.','T.','D.','K.','P.','Z.','H.','B.','R.'];
+const BETS=[0.5,1,1,2,2,3,5,5,10,20];
+let bots=[];
+function mkBots(){
+ const n=8+Math.floor(Math.random()*7),used=new Set();bots=[];
+ while(bots.length<n){
+  const nm=FN[Math.floor(Math.random()*FN.length)]+' '+LN[Math.floor(Math.random()*LN.length)];
+  if(used.has(nm))continue;used.add(nm);
+  bots.push({nm,bet:BETS[Math.floor(Math.random()*BETS.length)],tg:Math.round(100*(1.1+Math.min(40,-Math.log(1-Math.random())*1.8)))/100,st:0,win:0});
+ }
+ renderBots();
+}
+function stepBots(){let ch=false;bots.forEach(b=>{if(!b.st&&m>=b.tg){b.st=1;b.win=b.bet*b.tg;ch=true}});if(ch)renderBots()}
+function renderBots(){
+ const tot=bots.reduce((s,b)=>s+b.bet,0);
+ $('pcnt').textContent=bots.length+' players · '+money(tot)+' in bets';
+ $('pl').innerHTML=bots.map(b=>`<li><span>${b.nm}</span><span>${money(b.bet)}</span><span class="${b.st===1?'w2':b.st===2?'l2':''}">${b.st===1?b.tg.toFixed(2)+'x · +'+money(b.win-b.bet):b.st===2?'-'+money(b.bet):'in play'}</span></li>`).join('');
+}
+// ---------- Authentication (Confidentiality) ----------
+const ACC='aviAccounts';
+function accs(){try{return JSON.parse(localStorage.getItem(ACC)||'{}')}catch(e){return{}}}
+function putAccs(a){try{localStorage.setItem(ACC,JSON.stringify(a));return true}catch(e){return false}}
+const okPhone=p=>/^(\+263|0)7[0-9]{8}$/.test(p.replace(/\s/g,''));
+const norm=p=>{p=p.replace(/\s/g,'');return p.startsWith('+263')?'0'+p.slice(4):p};
+const hx=u=>Array.from(u).map(x=>x.toString(16).padStart(2,'0')).join('');
+const salt=()=>hx(crypto.getRandomValues(new Uint8Array(8)));
+async function hash(s,pw){const d=s+':'+pw;try{return hx(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(d))))}catch(e){return btoa(unescape(encodeURIComponent(d)))}}
+function view(v){['login','reg','reset'].forEach(x=>$('v-'+x).style.display=x===v?'block':'none');['lm','rm','pm'].forEach(x=>$(x).textContent='')}
+function am(id,t,ok){const e=$(id);e.textContent=t;e.style.color=ok?'var(--ok)':'var(--bad)'}
+$('to-reg').onclick=e=>{e.preventDefault();view('reg')};
+$('to-reset').onclick=e=>{e.preventDefault();view('reset')};
+document.querySelectorAll('.bk').forEach(a=>a.onclick=e=>{e.preventDefault();view('login')});
+$('rg').onclick=async()=>{
+ const nm=$('rn').value.trim(),p=$('rp').value,pw=$('rw').value,c=$('rc').value;
+ if(!nm)return am('rm','Enter your full name.');
+ if(!okPhone(p))return am('rm','Enter a valid mobile number, e.g. 0771234567.');
+ if(pw.length<6)return am('rm','Password must be at least 6 characters.');
+ if(pw!==c)return am('rm','Passwords do not match.');
+ const all=accs(),n=norm(p);
+ if(all[n])return am('rm','This number is already registered. Please log in.');
+ const s=salt();all[n]={name:nm,s,h:await hash(s,pw),ts:Date.now()};
+ if(!putAccs(all))return am('rm','Could not save the account (browser storage unavailable).');
+ view('login');$('lp').value=p;$('lw').value='';am('lm','Registration successful. Please log in.',1);
+};
+$('pr').onclick=async()=>{
+ const p=$('pp').value,nm=$('pn').value.trim().toLowerCase(),pw=$('pw').value,c=$('pc').value;
+ const all=accs(),n=norm(p),a=okPhone(p)&&all[n];
+ if(!a||a.name.toLowerCase()!==nm)return am('pm','Mobile number and full name do not match a registered account.');
+ if(pw.length<6)return am('pm','Password must be at least 6 characters.');
+ if(pw!==c)return am('pm','Passwords do not match.');
+ a.s=salt();a.h=await hash(a.s,pw);putAccs(all);
+ view('login');$('lp').value=p;$('lw').value='';am('lm','Password reset. Please log in with your new password.',1);
+};
+$('lg').onclick=async()=>{
+ const p=$('lp').value,pw=$('lw').value;
+ if(p.trim().toLowerCase()==='admin'){
+  let ad=jget(AK,null);
+  if(!ad){const s=salt();ad={s,h:await hash(s,'Admin@2026')};jput(AK,ad)}
+  if(!pw||await hash(ad.s,pw)!==ad.h)return am('lm','Incorrect mobile number or password.');
+  $('auth').style.display='none';$('admin').style.display='grid';renderAdmin();return;
+ }
+ if(!okPhone(p)||!pw)return am('lm','Enter your mobile number and password.');
+ const n=norm(p),a=accs()[n];
+ if(!a||await hash(a.s,pw)!==a.h)return am('lm','Incorrect mobile number or password.');
+ if(a.blocked)return am('lm','This account has been blocked. Please contact support.');
+ user=n;uname=a.name;loadUser();$('auth').style.display='none';$('app').style.display='grid';
+ const w=$('who');w.textContent=a.name+' · ';
+ const l=document.createElement('a');l.href='#';l.textContent='Logout';
+ l.onclick=ev=>{ev.preventDefault();if(stake&&!confirm('Your bet in this round will be lost. Log out?'))return;balance+=queued;queued=0;save();location.reload()};
+ w.appendChild(l);
+ renderMy();render();draw();refreshGo();if(!started){started=true;waitPhase()}
+};
+// ---------- Admin & player issues ----------
+const AK='aviAdmin',TK='aviTickets';
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function jget(k,d){try{return JSON.parse(localStorage.getItem(k)||'null')||d}catch(e){return d}}
+function jput(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
+const udata=n=>jget('avi_'+n,{b:0,h:[],l:[],r:[],n:0});
+let sel=null;
+function renderMy(){
+ const t=jget(TK,[]).filter(x=>x.p===user).reverse();
+ $('tl').innerHTML=t.map(x=>`<li style="display:block"><div>${esc(x.txt)} — <span class="${x.st==='Resolved'?'w2':'l2'}">${x.st}</span></div>${x.rep?`<div style="color:var(--mut)">Admin: ${esc(x.rep)}</div>`:''}</li>`).join('')||'<li><span>No issues reported</span></li>';
+}
+$('tb').onclick=()=>{
+ const v=$('tx').value.trim();if(!v)return;
+ const t=jget(TK,[]);t.push({p:user,name:uname,txt:v,st:'Open',rep:'',ts:Date.now()});jput(TK,t);$('tx').value='';renderMy();
+};
+function renderAdmin(){
+ const all=accs(),ks=Object.keys(all);
+ $('acnt').textContent=ks.length+' registered';
+ $('alist').innerHTML=ks.map(k=>`<li data-p="${k}" style="cursor:pointer"><span>${esc(all[k].name)} · ${k}${all[k].blocked?' (blocked)':''}</span><span>${money(udata(k).b||0)}</span></li>`).join('')||'<li><span>No players yet</span></li>';
+ renderDetail();renderTickets();
+}
+function renderDetail(){
+ const all=accs(),a=sel&&all[sel];
+ $('adet').style.display=a?'block':'none';if(!a)return;
+ const u=udata(sel);
+ $('adn').innerHTML=`<b>${esc(a.name)}</b> · ${sel}<br>Balance: ${money(u.b||0)} · Status: ${a.blocked?'Blocked':'Active'}<br>Registered: ${a.ts?new Date(a.ts).toLocaleString():'—'}`;
+ $('adl').innerHTML=(u.l||[]).map(x=>`<li><span>${esc(x.t)}</span><span class="${x.a>=0?'w2':'l2'}">${x.a>=0?'+':''}${x.a.toFixed(2)} → ${money(x.b)}</span></li>`).join('')||'<li><span>No transactions</span></li>';
+ $('ablk').textContent=a.blocked?'Unblock':'Block';
+}
+function renderTickets(){
+ const t=jget(TK,[]);
+ $('atk').innerHTML=t.map((x,i)=>`<li style="display:block"><div><b>${esc(x.name)}</b> · ${esc(x.p)} · ${new Date(x.ts).toLocaleString()} · <span class="${x.st==='Resolved'?'w2':'l2'}">${x.st}</span></div><div>${esc(x.txt)}</div>${x.rep?`<div style="color:var(--mut)">Reply: ${esc(x.rep)}</div>`:''}${x.st==='Open'?`<button data-r="${i}" style="padding:6px 10px;margin-top:6px;font-size:13px">Reply &amp; Resolve</button>`:''}</li>`).reverse().join('')||'<li><span>No issues reported</span></li>';
+}
+$('alist').onclick=e=>{const li=e.target.closest('li[data-p]');if(li){sel=li.dataset.p;renderDetail()}};
+$('atk').onclick=e=>{
+ const i=e.target.dataset.r;if(i==null)return;
+ const r=prompt('Reply to the player:');if(!r)return;
+ const t=jget(TK,[]);t[i].rep=r;t[i].st='Resolved';jput(TK,t);renderTickets();
+};
+$('aadj').onclick=()=>{
+ const v=parseFloat($('aamt').value),why=$('awhy').value.trim();
+ if(!sel||!v||!why)return alert('Enter an amount (+ or -) and a reason.');
+ const u=udata(sel);if((u.b||0)+v<0)return alert('This would make the balance negative.');
+ u.b=(u.b||0)+v;u.l=u.l||[];u.l.unshift({t:'Admin adjustment: '+why,a:v,b:u.b});jput('avi_'+sel,u);
+ $('aamt').value='';$('awhy').value='';renderAdmin();
+};
+$('arst').onclick=async()=>{
+ const pw=prompt('Enter a temporary password (min 6 characters) for this player:');
+ if(!pw||pw.length<6)return;
+ const all=accs(),a=all[sel];a.s=salt();a.h=await hash(a.s,pw);putAccs(all);alert('Password reset. Give the player the temporary password.');
+};
+$('ablk').onclick=()=>{const all=accs();all[sel].blocked=!all[sel].blocked;putAccs(all);renderAdmin()};
+$('apw').onclick=async e=>{
+ e.preventDefault();const pw=prompt('New admin password (min 6 characters):');
+ if(!pw||pw.length<6)return;const s=salt();jput(AK,{s,h:await hash(s,pw)});alert('Admin password changed.');
+};
+$('aout').onclick=e=>{e.preventDefault();location.reload()};
+render();draw();refreshGo();
+</script>
+</body>
+</html>
