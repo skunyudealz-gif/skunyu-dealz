@@ -37,6 +37,7 @@ li{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px so
 .ac{max-width:420px;margin:6vh auto 0;display:grid;gap:12px}.lk{text-align:center;margin-top:12px;font-size:14px}a{color:var(--ac)}
 .rg{font-size:12px;color:var(--mut);text-align:center;line-height:1.6}.rg b{color:var(--tx)}
 #pl li{display:grid;grid-template-columns:1.3fr .8fr 1.4fr;gap:6px}#pl li span:last-child{text-align:right;font-weight:700}
+#tabs button[data-g]{flex:1 1 28%!important;font-size:13px!important;padding:10px 4px!important}
 </style>
 </head>
 <body>
@@ -90,9 +91,20 @@ li{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px so
  <div class="card top"><h1>✈️ Skunyu Dealz</h1><div class="bal"><small id="who"></small><small>Balance</small><b id="bal">$0.00</b><small id="dl" style="min-height:15px;font-weight:700"></small></div></div>
 
  <div class="card">
+  <div class="row" id="tabs" style="margin:0 0 8px"><button data-g="aviator" style="flex:1">✈️ Aviator</button><button data-g="ngoniator" class="s" style="flex:1">🚀 Ngoniator</button><button data-g="spin" class="s">🎡 Skunyu Spin</button><button id="mute" class="s" title="Sound on/off" style="padding:12px">🔊</button></div>
+  <div id="gnote" style="font-size:12px;color:var(--mut);margin-bottom:8px">Aviator: classic climb</div>
   <canvas id="cv" width="520" height="240"></canvas>
   <div class="mult" id="mult">1.00x</div>
   <div class="hist" id="hist"></div>
+ </div>
+ <div class="card" id="spincard" style="display:none">
+  <b>Skunyu Spin</b>
+  <div style="text-align:center;font-size:22px;line-height:1;margin-top:8px;color:var(--ac)">&#9660;</div>
+  <canvas id="sw" width="300" height="300" style="width:280px;height:280px;max-width:100%;background:none;border-radius:50%;margin:0 auto"></canvas>
+  <div class="hist" id="shist" style="justify-content:center"></div>
+  <label>Bet amount ($)</label><input id="sbet" type="number" min="0.1" step="0.1" value="1">
+  <button class="big" id="ssp">SPIN</button>
+  <div class="msg" id="smsg" style="text-align:center">Prizes: 0x, 0.5x, 2x, 5x and 10x your bet. Only about 1 spin in 7 pays more than the bet.</div>
  </div>
  <div class="card"><div class="top"><b>Live Players</b><small id="pcnt" style="color:var(--mut)"></small></div><ul id="pl" style="max-height:210px"></ul></div>
 
@@ -144,13 +156,18 @@ li{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px so
 const $=id=>document.getElementById(id);
 let balance=0,state='idle',m=1,crashAt=1,t0=0,stake=0,raf,history=[],log=[],queued=0,cashedAt=0,round=0,rec=[],cd=0,tmr;
 let user=null,started=false,uname='';
+const G={
+ aviator:{name:'Aviator',i:'✈️',c:'#e11d48',f:'rgba(225,29,72,.18)',k:0.12,n:'Aviator: classic climb',bg:''},
+ ngoniator:{name:'Ngoniator',i:'🚀',c:'#d97706',f:'rgba(217,119,6,.2)',k:0.18,n:'Ngoniator: faster climb, higher risk',bg:'linear-gradient(160deg,#0f3d2e,#042f2e)'}
+};
+let game='aviator',nextGame='aviator';
 function loadUser(){balance=0;history=[];log=[];rec=[];round=0;try{const s=JSON.parse(localStorage.getItem('avi_'+user)||'null');if(s){balance=s.b||0;history=s.h||[];log=s.l||[];rec=s.r||[];round=s.n||0}}catch(e){}}
 function save(){try{if(user)localStorage.setItem('avi_'+user,JSON.stringify({b:balance,h:history.slice(0,15),l:log.slice(0,40),r:rec.slice(0,30),n:round}))}catch(e){}}
 const money=n=>'$'+n.toFixed(2);
 function render(){
  $('bal').textContent=money(balance);
  $('hist').innerHTML=history.slice(0,12).map(x=>`<span class="${x>=2?'hi':'lo'}">${x.toFixed(2)}x</span>`).join('');
- $('rec').innerHTML=rec.slice(0,30).map(x=>`<li><span>Round #${x.n} — ${x.x.toFixed(2)}x</span><span class="${x.r==='Lost'?'l2':x.r==='No bet'?'':'w2'}">${x.r}</span></li>`).join('')||'<li><span>No rounds yet</span></li>';
+ $('rec').innerHTML=rec.slice(0,30).map(x=>`<li><span>${x.g==='ngoniator'?'Ngoniator':'Aviator'} #${x.n} — ${x.x.toFixed(2)}x</span><span class="${x.r==='Lost'?'l2':x.r==='No bet'?'':'w2'}">${x.r}</span></li>`).join('')||'<li><span>No rounds yet</span></li>';
  $('log').innerHTML=log.slice(0,40).map(x=>`<li><span>${x.t}</span><span class="${x.a>=0?'w2':'l2'}">${x.a>=0?'+':''}${x.a.toFixed(2)} → ${money(x.b)}</span></li>`).join('')||'<li><span>No transactions yet</span></li>';
 }
 function addLog(t,a){log.unshift({t,a,b:balance});save();render();flash(a)}
@@ -160,14 +177,20 @@ function flash(a){
  setTimeout(()=>{d.textContent='';b.style.color=''},2500);
 }
 function msg(el,t,c){el.textContent=t;el.style.color=c||'var(--tx)'}
-// crash point: 20% instant crash (1.00x), 30% crash at 1.01x-1.30x, the rest use a 15% house-edge formula
+// crash point. Aviator: 15% instant crash, 28% crash by 1.30x, rest with a 12% house edge. Ngoniator: riskier (20% instant, 32% by 1.50x, 18% house edge)
 function genCrash(){
  const r=Math.random();
- if(r<0.20)return 1;
- if(r<0.50)return 1+Math.floor(1+Math.random()*30)/100;
- return Math.max(1,Math.floor(100*(0.85/(1-Math.random())))/100);
+ if(game==='ngoniator'){
+  if(r<0.20)return 1;
+  if(r<0.52)return 1+Math.floor(1+Math.random()*50)/100;
+  return Math.max(1,Math.floor(100*(0.82/(1-Math.random())))/100);
+ }
+ if(r<0.15)return 1;
+ if(r<0.43)return 1+Math.floor(1+Math.random()*30)/100;
+ return Math.max(1,Math.floor(100*(0.88/(1-Math.random())))/100);
 }
 const cv=$('cv'),ctx=cv.getContext('2d');
+const _ft=ctx.fillText.bind(ctx);ctx.fillText=(t,x,y)=>_ft(String(t).indexOf('\u2708')===0?G[game].i:t,x,y);
 function draw(){
  const W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
  const t=(performance.now()-t0)/1000,tx=Math.max(8,t),my=Math.max(2,m);
@@ -175,39 +198,39 @@ function draw(){
  if(state==='idle'||state==='wait'){ctx.font='36px serif';ctx.fillText('✈️',34,H-32);return}
  const X=s=>30+(s/tx)*(W-50),Y=v=>H-25-((v-1)/(my-1))*(H-50);
  ctx.beginPath();ctx.moveTo(X(0),Y(1));
- for(let s=0;s<=t;s+=0.05)ctx.lineTo(X(s),Y(Math.exp(0.12*s)));
- ctx.lineTo(X(t),Y(m));ctx.strokeStyle='#e11d48';ctx.lineWidth=4;ctx.stroke();
- ctx.lineTo(X(t),H-25);ctx.lineTo(X(0),H-25);ctx.fillStyle='rgba(225,29,72,.18)';ctx.fill();
+ for(let s=0;s<=t;s+=0.05)ctx.lineTo(X(s),Y(Math.exp(G[game].k*s)));
+ ctx.lineTo(X(t),Y(m));ctx.strokeStyle=G[game].c;ctx.lineWidth=4;ctx.stroke();
+ ctx.lineTo(X(t),H-25);ctx.lineTo(X(0),H-25);ctx.fillStyle=G[game].f;ctx.fill();
  if(state==='flying'){ctx.font='30px serif';ctx.fillText('✈️',X(t)-14,Y(m)-6)}
  else{ctx.font='30px serif';ctx.fillText('💥',X(t)-14,Y(m)-6)}
 }
 function tick(){
- m=Math.exp(0.12*(performance.now()-t0)/1000);
+ m=Math.exp(G[game].k*(performance.now()-t0)/1000);
  const au=parseFloat($('auto').value);
  if(m>=crashAt){m=crashAt;end();return}
  if(au>=1.1&&m>=au){cashOut(au);}
- stepBots();
+ stepBots();engineUpdate();
  $('mult').textContent=m.toFixed(2)+'x';draw();
  if(state==='flying')raf=requestAnimationFrame(tick);
 }
 function cashOut(at){
  if(state!=='flying'||!stake)return;
- const mm=at||m,win=stake*mm;balance+=win;cashedAt=mm;
+ const mm=at||m,win=stake*mm;balance+=win;cashedAt=mm;tone(660,0.15,'sine',0.15);setTimeout(()=>tone(880,0.25,'sine',0.15),120);
  addLog(`Won @ ${mm.toFixed(2)}x (bet ${money(stake)})`,win-stake);
  msg($('msg'),`Cashed out at ${mm.toFixed(2)}x. You won ${money(win-stake)}. Balance: ${money(balance)}`,'var(--ok)');
  stake=0;$('cash').style.display='none';
 }
 function end(){
- state='crashed';cancelAnimationFrame(raf);
+ state='crashed';cancelAnimationFrame(raf);stopEngine();tone(250,0.6,'sawtooth',0.13,1600);tone(80,0.5,'square',0.1,40);
  history.unshift(crashAt);round++;const lost=stake;bots.forEach(b=>{if(!b.st)b.st=2});renderBots();
  $('mult').textContent='Crashed @ '+crashAt.toFixed(2)+'x';$('mult').classList.add('crash');draw();
  if(stake){addLog(`Lost (crashed @ ${crashAt.toFixed(2)}x)`,-stake);msg($('msg'),`Crashed! You lost ${money(stake)}. Balance: ${money(balance)}`,'var(--bad)');stake=0}
  if(!lost&&!cashedAt)msg($('msg'),'Round crashed at '+crashAt.toFixed(2)+'x (no bet placed).');
- rec.unshift({n:round,x:crashAt,r:lost?'Lost':cashedAt?'Won @ '+cashedAt.toFixed(2)+'x':'No bet'});
+ rec.unshift({n:round,x:crashAt,r:lost?'Lost':cashedAt?'Won @ '+cashedAt.toFixed(2)+'x':'No bet',g:game});
  $('cash').style.display='none';save();render();setTimeout(waitPhase,3000);
 }
 function waitPhase(){
- state='wait';cancelAnimationFrame(raf);cd=5;mkBots();
+ state='wait';cancelAnimationFrame(raf);cd=5;mkBots();setGame(nextGame);
  $('cash').style.display='none';$('mult').classList.remove('crash');$('mult').classList.add('wait');draw();
  const upd=()=>{$('mult').textContent='Next round in '+cd+'s'};upd();
  clearInterval(tmr);tmr=setInterval(()=>{cd--;if(cd<=0){clearInterval(tmr);launch()}else upd()},1000);
@@ -216,7 +239,7 @@ function launch(){
  stake=queued;queued=0;cashedAt=0;crashAt=genCrash();m=1;state='flying';t0=performance.now();
  $('mult').classList.remove('wait','crash');$('cash').style.display=stake?'block':'none';
  msg($('msg'),stake?'Plane is flying… cash out before it crashes!':'Round in progress (no bet placed).');
- refreshGo();raf=requestAnimationFrame(tick);
+ tone(180,0.5,'sawtooth',0.1,700);engineStart();refreshGo();raf=requestAnimationFrame(tick);
 }
 function refreshGo(){$('go').textContent=queued?`Cancel Bet (${money(queued)})`:'Place Bet for Next Round'}
 $('go').onclick=()=>{
@@ -385,6 +408,85 @@ $('apw').onclick=async e=>{
  if(!pw||pw.length<6)return;const s=salt();jput(AK,{s,h:await hash(s,pw)});alert('Admin password changed.');
 };
 $('aout').onclick=e=>{e.preventDefault();location.reload()};
+// ---------- Sound (generated in the browser, no files) ----------
+let AC=null,muted=false,eng=null;
+function audio(){try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume()}catch(e){}return AC}
+function tone(f,d,type,v,slide,force){
+ if(muted||(onSpin&&!force))return;const a=audio();if(!a)return;
+ const o=a.createOscillator(),g=a.createGain(),t=a.currentTime;
+ o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(slide,t+d);
+ g.gain.setValueAtTime(v||0.12,t);g.gain.exponentialRampToValueAtTime(0.0001,t+d);
+ o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+d);
+}
+function engineStart(){
+ stopEngine();if(muted||onSpin)return;const a=audio();if(!a)return;
+ const o=a.createOscillator(),g=a.createGain();
+ o.type=game==='ngoniator'?'sawtooth':'triangle';o.frequency.value=game==='ngoniator'?120:90;g.gain.value=0.035;
+ o.connect(g);g.connect(a.destination);o.start();eng={o,g};
+}
+function engineUpdate(){if(eng&&AC){const b=game==='ngoniator'?120:90;eng.o.frequency.setTargetAtTime(b+Math.min(m,20)*25,AC.currentTime,0.05)}}
+function stopEngine(){if(eng){try{eng.o.stop()}catch(e){}eng=null}}
+document.addEventListener('pointerdown',()=>audio());
+$('mute').onclick=()=>{muted=!muted;$('mute').textContent=muted?'🔇':'🔊';if(muted)stopEngine();else if(state==='flying')engineStart()};
+// ---------- Skunyu Spin ----------
+const SEG=[0,0.5,0,2,0,0.5,0,5,0,0.5,0,10];
+const SCOL={0:'#475569',0.5:'#d97706',2:'#16a34a',5:'#2563eb',10:'#dc2626'};
+const SP=[[0,58],[0.5,27],[2,10],[5,4.2],[10,0.8]];
+let onSpin=false,spinning=false,srot=0,shist=[];
+function drawWheel(){
+ const x=$('sw').getContext('2d'),R=140,cx=150,cy=150;
+ x.clearRect(0,0,300,300);
+ SEG.forEach((v,i)=>{
+  const a0=(-90+i*30)*Math.PI/180,a1=(-90+(i+1)*30)*Math.PI/180;
+  x.beginPath();x.moveTo(cx,cy);x.arc(cx,cy,R,a0,a1);x.closePath();x.fillStyle=SCOL[v];x.fill();x.strokeStyle='#fff';x.lineWidth=2;x.stroke();
+  x.save();x.translate(cx,cy);x.rotate((a0+a1)/2);x.fillStyle='#fff';x.font='bold 16px sans-serif';x.textAlign='right';x.fillText(v+'x',R-12,5);x.restore();
+ });
+ x.beginPath();x.arc(cx,cy,18,0,7);x.fillStyle='#fff';x.fill();
+}
+function renderSpinHist(){$('shist').innerHTML=shist.slice(0,12).map(v=>`<span class="${v>1?'hi':'lo'}">${v}x</span>`).join('')}
+function showSpin(on){
+ onSpin=on;
+ [cv,$('mult'),$('hist'),$('bet').closest('.card'),$('pl').closest('.card'),$('rec').closest('.card')].forEach(e=>{e.style.display=on?'none':''});
+ $('spincard').style.display=on?'block':'none';
+ if(on){stopEngine();document.documentElement.style.setProperty('--ac','#7c3aed');$('gnote').textContent='Skunyu Spin: spin the wheel and win up to 10x'}
+ else setGame(game);
+ setTabs();
+}
+$('ssp').onclick=()=>{
+ if(spinning)return;
+ const b=parseFloat($('sbet').value);
+ if(!(b>=0.1))return msg($('smsg'),'Enter a bet of at least $0.10.','var(--bad)');
+ if(b>balance)return msg($('smsg'),'Insufficient balance. Please deposit first.','var(--bad)');
+ balance-=b;render();spinning=true;$('ssp').disabled=true;msg($('smsg'),'Spinning…');
+ let r=Math.random()*100,mult=0;for(const [v,w] of SP){if(r<w){mult=v;break}r-=w}
+ const idx=SEG.map((v,i)=>v===mult?i:-1).filter(i=>i>=0),i=idx[Math.floor(Math.random()*idx.length)];
+ const target=Math.ceil(srot/360)*360+1800+(360-(i*30+15))+(Math.random()*16-8);srot=target;
+ const w=$('sw');w.style.transition='transform 4s cubic-bezier(.15,.7,.15,1)';w.style.transform='rotate('+target+'deg)';
+ for(let k=0;k<=23;k++)setTimeout(()=>tone(700+k*10,0.04,'square',0.05,0,true),4000*Math.pow(k/24,2));
+ setTimeout(()=>{
+  const win=b*mult;balance+=win;
+  addLog(`Skunyu Spin ${mult}x (bet ${money(b)})`,win-b);
+  shist.unshift(mult);renderSpinHist();
+  if(mult>1){tone(523,0.15,'sine',0.15,0,true);setTimeout(()=>tone(659,0.15,'sine',0.15,0,true),130);setTimeout(()=>tone(784,0.3,'sine',0.15,0,true),260)}
+  else tone(180,0.4,'sawtooth',0.1,70,true);
+  msg($('smsg'),mult>1?`You won ${money(win-b)}! (${mult}x) Balance: ${money(balance)}`:mult>0?`${mult}x: ${money(win)} back, a loss of ${money(b-win)}. Balance: ${money(balance)}`:`No win. You lost ${money(b)}. Balance: ${money(balance)}`,mult>1?'var(--ok)':'var(--bad)');
+  spinning=false;$('ssp').disabled=false;
+ },4100);
+};
+drawWheel();
+// ---------- Game switcher ----------
+function setTabs(){const cur=onSpin?'spin':nextGame;document.querySelectorAll('#tabs button[data-g]').forEach(b=>{b.className=b.dataset.g===cur?'':'s'})}
+function setGame(g){game=g;if(onSpin)return;document.documentElement.style.setProperty('--ac',G[g].c);$('gnote').textContent=G[g].n;cv.style.background=G[g].bg;setTabs()}
+document.querySelectorAll('#tabs button[data-g]').forEach(b=>b.onclick=()=>{
+ if(b.dataset.g==='spin'){
+  if(stake||queued)return msg($('msg'),'Finish or cancel your bet before opening Skunyu Spin.','var(--bad)');
+  return showSpin(true);
+ }
+ if(onSpin)showSpin(false);
+ nextGame=b.dataset.g;setTabs();
+ if(state==='flying'&&nextGame!==game)msg($('msg'),'Switching to '+G[nextGame].name+' at the next round.');
+ else{setGame(nextGame);if(nextGame===game)draw()}
+});
 render();draw();refreshGo();
 </script>
 </body>
